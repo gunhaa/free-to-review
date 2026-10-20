@@ -1,0 +1,29 @@
+{
+  "name": "free-to-review",
+  "version": "0.1.0",
+  "description": "MCP server that asks a free OpenRouter model for a second opinion.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "free-to-review": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "presets",
+    "README.md"
+  ],
+  "license": "MIT",
+  "repository": "https://github.com/gunhaa/free-to-review",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"test/**/*.test.ts\"",
+    "check": "npm run build && git diff --exit-code -- dist",
+    "smoke": "node scripts/smoke.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}
