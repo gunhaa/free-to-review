@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "f2r": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/dist/index.js"],
+      "env": {
+        "OPENROUTER_API_KEY": "${user_config.openrouter_api_key}",
+        "F2R_PANEL": "${user_config.panel}",
+        "F2R_MODELS": "${user_config.models}"
+      }
+    }
+  }
+}

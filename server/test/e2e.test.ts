@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { VERSION } from "../src/version.ts";
@@ -52,13 +52,8 @@ test("dist/index.js is executable with a node shebang", () => {
   assert.ok(readFileSync(`${SERVER_DIR}dist/index.js`, "utf8").startsWith("#!/usr/bin/env node\n"));
 });
 
-test("version strings agree", t => {
+test("version strings agree", () => {
   const pkg = JSON.parse(readFileSync(`${SERVER_DIR}package.json`, "utf8"));
   assert.equal(pkg.version, VERSION);
-  const manifest = `${ROOT_DIR}.claude-plugin/plugin.json`;
-  if (!existsSync(manifest)) {
-    t.skip("plugin.json is created in Task 8");
-    return;
-  }
-  assert.equal(JSON.parse(readFileSync(manifest, "utf8")).version, VERSION);
+  assert.equal(JSON.parse(readFileSync(`${ROOT_DIR}.claude-plugin/plugin.json`, "utf8")).version, VERSION);
 });
