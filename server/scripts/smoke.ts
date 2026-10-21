@@ -35,6 +35,7 @@ const result = await ask(
     getFreeModels: models.getFreeModels,
     call: createCaller({ fetch, apiKey: config.apiKey, timeoutMs: config.timeoutMs }),
     now: Date.now,
+    blocked: new Map(),
   },
 );
 console.log(result.text);

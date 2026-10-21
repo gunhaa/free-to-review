@@ -21,9 +21,12 @@ export interface AskDeps {
   getFreeModels: () => Promise<string[]>;
   call: (o: CallOptions) => Promise<CallResult>;
   now: () => number;
+  // Model id → time (ms) until which it is skipped, after it answered HTTP 403.
+  blocked: Map<string, number>;
 }
 
 export const MAX_ATTEMPTS = 3;
+export const BLOCK_TTL_MS = 3_600_000;
 
 type Failure = Extract<CallResult, { ok: false }>;
 type Success = Extract<CallResult, { ok: true }>;
@@ -97,6 +100,15 @@ function failureMessage(outcomes: SlotOutcome[]): string {
   return `All attempts failed:\n${attempts.join("\n")}`;
 }
 
+// Skips models that recently answered 403 (e.g. free models gated to listed apps),
+// so a call does not spend its attempts on them. If all are blocked, tries them anyway.
+function skipBlocked(candidates: string[], deps: AskDeps): string[] {
+  const now = deps.now();
+  for (const [id, until] of deps.blocked) if (until <= now) deps.blocked.delete(id);
+  const usable = candidates.filter(c => !deps.blocked.has(c));
+  return usable.length > 0 ? usable : candidates;
+}
+
 export async function ask(args: AskArgs, deps: AskDeps): Promise<ToolResult> {
   const { config, presets } = deps;
   if (!config.apiKey) return error(NO_KEY);
@@ -136,6 +148,7 @@ export async function ask(args: AskArgs, deps: AskDeps): Promise<ToolResult> {
     }
     if (candidates.length === 0) return error("OpenRouter lists no free text models right now. Set F2R_MODELS to a comma-separated list of model IDs.");
   }
+  if (model === undefined) candidates = skipBlocked(candidates, deps);
 
   const panelMode = model === undefined && config.panel > 1;
   const initial = panelMode ? pickPanel(candidates, config.panel) : [candidates[0]];
@@ -161,6 +174,7 @@ export async function ask(args: AskArgs, deps: AskDeps): Promise<ToolResult> {
     while (current !== undefined) {
       const result = await deps.call({ model: current, ...callOptions });
       if (result.ok) return { answer: result, failures };
+      if (result.status === 403) deps.blocked.set(current, deps.now() + BLOCK_TTL_MS);
       failures.push(result);
       if (!result.retryable || failures.length >= attempts) break;
       current = nextCandidate(slot);

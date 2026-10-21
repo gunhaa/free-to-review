@@ -18,11 +18,13 @@ const presets = loadPresets([BUILTIN_PRESETS_DIR, config.presetsDir], warn);
 const models = createModelSource({ fetch, now: Date.now, timeoutMs: config.timeoutMs });
 const call = createCaller({ fetch, apiKey: config.apiKey ?? "", timeoutMs: config.timeoutMs });
 
+const blocked = new Map<string, number>();
+
 const handler = createHandler({
   name: "free-to-review",
   version: VERSION,
   tools: [toolDefinition(presets)],
-  callTool: (_name, args) => ask(args, { config, presets, getFreeModels: models.getFreeModels, call, now: Date.now }),
+  callTool: (_name, args) => ask(args, { config, presets, getFreeModels: models.getFreeModels, call, now: Date.now, blocked }),
 });
 
 await serveStdio(handler, process.stdin, process.stdout);

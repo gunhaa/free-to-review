@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MAX_ATTEMPTS, ask, composeSystem, toolDefinition } from "../src/ask.ts";
+import { BLOCK_TTL_MS, MAX_ATTEMPTS, ask, composeSystem, toolDefinition } from "../src/ask.ts";
 import type { AskDeps } from "../src/ask.ts";
 import type { Config } from "../src/config.ts";
 import type { CallOptions, CallResult } from "../src/openrouter.ts";
@@ -22,6 +22,8 @@ interface Script {
   discovered?: string[] | Error;
   config?: Partial<Config>;
   delays?: Record<string, number>;
+  blocked?: Map<string, number>;
+  clock?: { t: number };
 }
 
 function deps(s: Script = {}) {
@@ -45,7 +47,8 @@ function deps(s: Script = {}) {
       return s.discovered ?? [];
     },
     call,
-    now: () => 0,
+    now: () => s.clock?.t ?? 0,
+    blocked: s.blocked ?? new Map(),
   };
   return { d, calls, models: () => calls.map(c => c.model), discoveries: () => discoveries };
 }
@@ -278,4 +281,57 @@ test("answer cannot close or reopen the output delimiters", async () => {
   assert.equal(r.text.match(/EXTERNAL_MODEL_OUTPUT/gi)!.length, 2);
   assert.ok(r.text.startsWith("Second opinion from `a/x:free` (no preset)\n\n<<<EXTERNAL_MODEL_OUTPUT\nfine\n"));
   assert.ok(r.text.endsWith("\nmore\nEXTERNAL_MODEL_OUTPUT>>>"));
+});
+
+const GATED = { status: 403, message: "only available on agentic harnesses" };
+
+test("a model that answered 403 is skipped on later calls", async () => {
+  const blocked = new Map<string, number>();
+  const first = deps({ models: ["a/1", "b/1"], answers: { "a/1": GATED, "b/1": "ok" }, blocked });
+  await ask({ prompt: "x" }, first.d);
+  assert.deepEqual(first.models(), ["a/1", "b/1"]);
+  const second = deps({ models: ["a/1", "b/1"], answers: { "a/1": GATED, "b/1": "ok" }, blocked });
+  assert.equal((await ask({ prompt: "x" }, second.d)).isError, false);
+  assert.deepEqual(second.models(), ["b/1"]);
+});
+
+test("other failures are not remembered", async () => {
+  const blocked = new Map<string, number>();
+  await ask({ prompt: "x" }, deps({ models: ["a/1", "b/1"], answers: { "a/1": { status: 429 }, "b/1": "ok" }, blocked }).d);
+  assert.equal(blocked.size, 0);
+});
+
+test("the block expires after an hour", async () => {
+  const blocked = new Map<string, number>();
+  const clock = { t: 0 };
+  await ask({ prompt: "x" }, deps({ models: ["a/1", "b/1"], answers: { "a/1": GATED, "b/1": "ok" }, blocked, clock }).d);
+  clock.t = BLOCK_TTL_MS - 1;
+  const during = deps({ models: ["a/1", "b/1"], answers: { "b/1": "ok" }, blocked, clock });
+  await ask({ prompt: "x" }, during.d);
+  assert.deepEqual(during.models(), ["b/1"]);
+  clock.t = BLOCK_TTL_MS + 1;
+  const after = deps({ models: ["a/1", "b/1"], answers: { "a/1": "ok" }, blocked, clock });
+  await ask({ prompt: "x" }, after.d);
+  assert.deepEqual(after.models(), ["a/1"]);
+});
+
+test("if every candidate is blocked, they are tried anyway", async () => {
+  const blocked = new Map([["a/1", BLOCK_TTL_MS]]);
+  const { d, models } = deps({ models: ["a/1"], answers: { "a/1": "ok" }, blocked });
+  assert.equal((await ask({ prompt: "x" }, d)).isError, false);
+  assert.deepEqual(models(), ["a/1"]);
+});
+
+test("an explicitly requested model is not skipped", async () => {
+  const blocked = new Map([["a/1:free", BLOCK_TTL_MS]]);
+  const { d, models } = deps({ answers: { "a/1:free": "ok" }, blocked });
+  await ask({ prompt: "x", model: "a/1:free" }, d);
+  assert.deepEqual(models(), ["a/1:free"]);
+});
+
+test("panel picks vendors from unblocked candidates", async () => {
+  const blocked = new Map([["a/1", BLOCK_TTL_MS]]);
+  const { d, models } = deps({ config: { panel: 2 }, models: ["a/1", "a/2", "b/1"], answers: { "a/2": "A", "b/1": "B" }, blocked });
+  assert.equal((await ask({ prompt: "x" }, d)).isError, false);
+  assert.deepEqual(models().sort(), ["a/2", "b/1"]);
 });
