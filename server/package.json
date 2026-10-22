@@ -1,6 +1,6 @@
 {
   "name": "free-to-review",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server that asks a free OpenRouter model for a second opinion.",
   "type": "module",
   "engines": {
