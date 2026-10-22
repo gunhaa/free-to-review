@@ -39,7 +39,7 @@ test("stdio session without an API key", async () => {
   assert.equal(replies.length, 3);
   const byId = new Map(replies.map(r => [r.id, r]));
   assert.equal(byId.get(1).result.serverInfo.name, "free-to-review");
-  assert.equal(byId.get(1).result.serverInfo.version, "0.1.0");
+  assert.equal(byId.get(1).result.serverInfo.version, "0.1.1");
   const tools = byId.get(2).result.tools;
   assert.equal(tools.length, 1);
   assert.equal(tools[0].name, "ask");

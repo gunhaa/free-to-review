@@ -1,7 +1,7 @@
 {
   "name": "free-to-review",
   "displayName": "Free to Review",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Code reviews and requests answered by free LLMs via OpenRouter, from two slash commands.",
   "author": {
     "name": "gunhaa",
