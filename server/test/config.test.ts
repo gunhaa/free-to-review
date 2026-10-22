@@ -2,17 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { loadConfig } from "../src/config.ts";
 
-const HOME = "/home/u";
 const noWarn = () => {};
 
 test("defaults", () => {
-  const c = loadConfig({}, HOME, noWarn);
-  assert.deepEqual(c, { apiKey: undefined, panel: 1, models: [], presetsDir: "/home/u/.config/free-to-review/presets", timeoutMs: 60000, maxPromptChars: 100000 });
+  const c = loadConfig({}, noWarn);
+  assert.deepEqual(c, { apiKey: undefined, panel: 1, models: [], timeoutMs: 60000, maxPromptChars: 100000 });
 });
 
 test("empty strings from plugin substitution mean defaults, no warning", () => {
   const warns: string[] = [];
-  const c = loadConfig({ OPENROUTER_API_KEY: "", F2R_PANEL: "", F2R_MODELS: "" }, HOME, m => warns.push(m));
+  const c = loadConfig({ OPENROUTER_API_KEY: "", F2R_PANEL: "", F2R_MODELS: "" }, m => warns.push(m));
   assert.equal(c.apiKey, undefined);
   assert.equal(c.panel, 1);
   assert.deepEqual(c.models, []);
@@ -20,7 +19,7 @@ test("empty strings from plugin substitution mean defaults, no warning", () => {
 });
 
 test("parses values", () => {
-  const c = loadConfig({ OPENROUTER_API_KEY: "k", F2R_PANEL: "3", F2R_MODELS: " a/x:free, b/y:free ,", F2R_TIMEOUT_MS: "5000", F2R_MAX_PROMPT_CHARS: "10" }, HOME, noWarn);
+  const c = loadConfig({ OPENROUTER_API_KEY: "k", F2R_PANEL: "3", F2R_MODELS: " a/x:free, b/y:free ,", F2R_TIMEOUT_MS: "5000", F2R_MAX_PROMPT_CHARS: "10" }, noWarn);
   assert.equal(c.apiKey, "k");
   assert.equal(c.panel, 3);
   assert.deepEqual(c.models, ["a/x:free", "b/y:free"]);
@@ -30,7 +29,7 @@ test("parses values", () => {
 
 test("out of range or non-numeric falls back with a warning", () => {
   const warns: string[] = [];
-  const c = loadConfig({ F2R_PANEL: "4", F2R_TIMEOUT_MS: "abc" }, HOME, m => warns.push(m));
+  const c = loadConfig({ F2R_PANEL: "4", F2R_TIMEOUT_MS: "abc" }, m => warns.push(m));
   assert.equal(c.panel, 1);
   assert.equal(c.timeoutMs, 60000);
   assert.equal(warns.length, 2);
@@ -39,13 +38,8 @@ test("out of range or non-numeric falls back with a warning", () => {
 
 test("non-integer values fall back with a warning", () => {
   const warns: string[] = [];
-  const c = loadConfig({ F2R_PANEL: "1.5", F2R_MAX_PROMPT_CHARS: "0" }, HOME, m => warns.push(m));
+  const c = loadConfig({ F2R_PANEL: "1.5", F2R_MAX_PROMPT_CHARS: "0" }, m => warns.push(m));
   assert.equal(c.panel, 1);
   assert.equal(c.maxPromptChars, 100000);
   assert.equal(warns.length, 2);
-});
-
-test("XDG_CONFIG_HOME and F2R_PRESETS_DIR", () => {
-  assert.equal(loadConfig({ XDG_CONFIG_HOME: "/x" }, HOME, noWarn).presetsDir, "/x/free-to-review/presets");
-  assert.equal(loadConfig({ XDG_CONFIG_HOME: "/x", F2R_PRESETS_DIR: "/p" }, HOME, noWarn).presetsDir, "/p");
 });

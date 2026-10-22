@@ -43,7 +43,7 @@ test("stdio session without an API key", async () => {
   const tools = byId.get(2).result.tools;
   assert.equal(tools.length, 1);
   assert.equal(tools[0].name, "ask");
-  assert.deepEqual(tools[0].inputSchema.properties.preset.enum, ["critique", "edge-cases", "review"]);
+  assert.deepEqual(tools[0].inputSchema.properties.preset.enum, ["review"]);
   assert.equal(byId.get(3).result.isError, true);
   assert.match(byId.get(3).result.content[0].text, /OPENROUTER_API_KEY/);
 });

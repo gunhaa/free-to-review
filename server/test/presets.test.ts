@@ -41,13 +41,11 @@ test("user dir overrides and adds; invalid names skipped with warning; missing d
   assert.match(warns[0], /Bad_Name/);
 });
 
-test("built-in presets exist with descriptions and 'nothing found' phrases", () => {
+test("the only built-in preset is review, with a description and a 'nothing found' phrase", () => {
   const m = loadPresets([BUILTIN_PRESETS_DIR], noWarn);
-  assert.deepEqual([...m.keys()], ["critique", "edge-cases", "review"]);
+  assert.deepEqual([...m.keys()], ["review"]);
   assert.match(m.get("review")!.body, /No issues found\./);
-  assert.match(m.get("critique")!.body, /No significant concerns\./);
-  assert.match(m.get("edge-cases")!.body, /No additional edge cases\./);
-  for (const p of m.values()) assert.ok(p.description.length > 0);
+  assert.ok(m.get("review")!.description.length > 0);
 });
 
 test("unusable preset paths are skipped with a warning, not a crash", () => {

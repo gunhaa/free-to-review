@@ -1,5 +1,4 @@
 // Manual smoke test against the real OpenRouter API: OPENROUTER_API_KEY=... npm run smoke
-import { homedir } from "node:os";
 import { ask } from "../src/ask.ts";
 import { loadConfig } from "../src/config.ts";
 import { createModelSource } from "../src/models.ts";
@@ -7,7 +6,7 @@ import { createCaller } from "../src/openrouter.ts";
 import { BUILTIN_PRESETS_DIR, loadPresets } from "../src/presets.ts";
 
 const warn = (msg: string) => console.error(`[smoke] ${msg}`);
-const config = loadConfig(process.env, homedir(), warn);
+const config = loadConfig(process.env, warn);
 if (!config.apiKey) {
   console.error("Set OPENROUTER_API_KEY to run the smoke test.");
   process.exit(1);
@@ -31,7 +30,7 @@ const result = await ask(
   { prompt, preset: "review" },
   {
     config,
-    presets: loadPresets([BUILTIN_PRESETS_DIR, config.presetsDir], warn),
+    presets: loadPresets([BUILTIN_PRESETS_DIR], warn),
     getFreeModels: models.getFreeModels,
     call: createCaller({ fetch, apiKey: config.apiKey, timeoutMs: config.timeoutMs }),
     now: Date.now,

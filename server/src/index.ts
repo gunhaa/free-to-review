@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { homedir } from "node:os";
 import { ask, toolDefinition } from "./ask.ts";
 import { loadConfig } from "./config.ts";
 import { createModelSource } from "./models.ts";
@@ -13,8 +12,8 @@ const warn = (msg: string) => {
   process.stderr.write(`[free-to-review] ${msg}\n`);
 };
 
-const config = loadConfig(process.env, homedir(), warn);
-const presets = loadPresets([BUILTIN_PRESETS_DIR, config.presetsDir], warn);
+const config = loadConfig(process.env, warn);
+const presets = loadPresets([BUILTIN_PRESETS_DIR], warn);
 const models = createModelSource({ fetch, now: Date.now, timeoutMs: config.timeoutMs });
 const call = createCaller({ fetch, apiKey: config.apiKey ?? "", timeoutMs: config.timeoutMs });
 
