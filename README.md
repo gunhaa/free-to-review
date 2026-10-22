@@ -87,7 +87,7 @@ The commands are Claude Code features, but the server behind them is a plain MCP
 }
 ```
 
-The server reads only environment variables: `OPENROUTER_API_KEY`, `F2R_PANEL`, `F2R_MODELS`, `F2R_TIMEOUT_MS` (default `60000`), and `F2R_MAX_PROMPT_CHARS` (default `100000`; longer prompts are rejected instead of wasting quota). Invalid values fall back to the default with a warning on stderr.
+The server reads only environment variables: `OPENROUTER_API_KEY`, `F2R_PANEL`, `F2R_MODELS`, `F2R_TIMEOUT_MS` (default `120000`), and `F2R_MAX_PROMPT_CHARS` (default `100000`; longer prompts are rejected instead of wasting quota). Invalid values fall back to the default with a warning on stderr.
 
 ## Data and privacy
 

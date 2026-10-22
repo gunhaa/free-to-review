@@ -27,7 +27,12 @@ test("sends expected request and returns trimmed text", async () => {
   assert.equal(headers.get("content-type"), "application/json");
   assert.equal(headers.get("http-referer"), "https://github.com/gunhaa/free-to-review");
   assert.equal(headers.get("x-title"), "free-to-review");
-  assert.deepEqual(JSON.parse(String(seen[0].init.body)), { model: "a/x:free", temperature: 0.2, messages: [{ role: "system", content: "S" }, { role: "user", content: "P" }] });
+  assert.deepEqual(JSON.parse(String(seen[0].init.body)), {
+    model: "a/x:free",
+    temperature: 0.2,
+    reasoning: { effort: "low" },
+    messages: [{ role: "system", content: "S" }, { role: "user", content: "P" }],
+  });
 });
 
 test("omits system message when system is undefined or empty", async () => {
@@ -97,6 +102,25 @@ test("timeout is retryable", async () => {
   const { call } = setup(init => new Promise((_, reject) => {
     init.signal!.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
   }), 10);
+  const r = await call({ model: "m", prompt: "P" });
+  assert.deepEqual(r, { ok: false, model: "m", retryable: true, message: "timeout after 10 ms" });
+});
+
+test("a timeout while the body is still streaming is reported as a timeout, not invalid JSON", async () => {
+  // OpenRouter sends 200 headers at once, then whitespace keep-alives until the answer is ready.
+  const { call } = setup(
+    init =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode("\n   \n"));
+            init.signal?.addEventListener("abort", () => controller.error(new DOMException("aborted", "AbortError")));
+          },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    10,
+  );
   const r = await call({ model: "m", prompt: "P" });
   assert.deepEqual(r, { ok: false, model: "m", retryable: true, message: "timeout after 10 ms" });
 });

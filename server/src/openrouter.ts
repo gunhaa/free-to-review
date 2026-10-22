@@ -49,10 +49,19 @@ export function createCaller(deps: { fetch: typeof fetch; apiKey: string; timeou
           "HTTP-Referer": "https://github.com/gunhaa/free-to-review",
           "X-Title": "free-to-review",
         },
-        body: JSON.stringify({ model, messages, temperature: 0.2 }),
+        // Some free models reason by default at maximum effort and take minutes; low keeps answers within the timeout.
+        body: JSON.stringify({ model, messages, temperature: 0.2, reasoning: { effort: "low" } }),
         signal: controller.signal,
       });
-      const body: unknown = await res.json().catch(() => undefined);
+      // Read the body inside the try: OpenRouter sends headers at once and the answer much later,
+      // so the timeout usually fires here, and that must be reported as a timeout.
+      const raw = await res.text();
+      let body: unknown;
+      try {
+        body = JSON.parse(raw);
+      } catch {
+        body = undefined;
+      }
       if (!res.ok) {
         const reset = Number(res.headers.get("x-ratelimit-reset") ?? NaN);
         return {

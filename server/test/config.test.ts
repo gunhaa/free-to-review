@@ -6,7 +6,7 @@ const noWarn = () => {};
 
 test("defaults", () => {
   const c = loadConfig({}, noWarn);
-  assert.deepEqual(c, { apiKey: undefined, panel: 1, models: [], timeoutMs: 60000, maxPromptChars: 100000 });
+  assert.deepEqual(c, { apiKey: undefined, panel: 1, models: [], timeoutMs: 120000, maxPromptChars: 100000 });
 });
 
 test("empty strings from plugin substitution mean defaults, no warning", () => {
@@ -31,7 +31,7 @@ test("out of range or non-numeric falls back with a warning", () => {
   const warns: string[] = [];
   const c = loadConfig({ F2R_PANEL: "4", F2R_TIMEOUT_MS: "abc" }, m => warns.push(m));
   assert.equal(c.panel, 1);
-  assert.equal(c.timeoutMs, 60000);
+  assert.equal(c.timeoutMs, 120000);
   assert.equal(warns.length, 2);
   assert.match(warns[0], /F2R_PANEL/);
 });

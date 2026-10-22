@@ -20,7 +20,7 @@ export function loadConfig(env, warn) {
         apiKey: value(env, "OPENROUTER_API_KEY"),
         panel: integer(env, "F2R_PANEL", 1, 1, 3, warn),
         models: (env.F2R_MODELS ?? "").split(",").map(s => s.trim()).filter(s => s.length > 0),
-        timeoutMs: integer(env, "F2R_TIMEOUT_MS", 60000, 1000, Infinity, warn),
+        timeoutMs: integer(env, "F2R_TIMEOUT_MS", 120000, 1000, Infinity, warn),
         maxPromptChars: integer(env, "F2R_MAX_PROMPT_CHARS", 100000, 1, Infinity, warn),
     };
 }

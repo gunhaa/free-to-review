@@ -87,7 +87,7 @@ Claude Code의 플러그인 설정에서 지정합니다.
 }
 ```
 
-서버는 환경 변수만 읽습니다. `OPENROUTER_API_KEY`, `F2R_PANEL`, `F2R_MODELS`, `F2R_TIMEOUT_MS`(기본 `60000`), `F2R_MAX_PROMPT_CHARS`(기본 `100000`, 더 긴 프롬프트는 할당량을 낭비하지 않도록 거부)입니다. 잘못된 값은 stderr에 경고를 남기고 기본값을 씁니다.
+서버는 환경 변수만 읽습니다. `OPENROUTER_API_KEY`, `F2R_PANEL`, `F2R_MODELS`, `F2R_TIMEOUT_MS`(기본 `120000`), `F2R_MAX_PROMPT_CHARS`(기본 `100000`, 더 긴 프롬프트는 할당량을 낭비하지 않도록 거부)입니다. 잘못된 값은 stderr에 경고를 남기고 기본값을 씁니다.
 
 ## 데이터와 개인정보
 
