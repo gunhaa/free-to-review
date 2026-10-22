@@ -2,56 +2,76 @@ English | [한국어](README.ko.md)
 
 # free-to-review
 
-**Second opinions on your code and plans from free LLMs.**
+**Code reviews and answers from free LLMs, inside Claude Code.**
 
-free-to-review is a Claude Code plugin, and a plain MCP server, that lets Claude hand its work to a *different* LLM for review. It uses only [OpenRouter](https://openrouter.ai)'s free (`:free`) models, so the review costs nothing. A model that reviews its own work tends to repeat its own blind spots. A model with different training catches different problems.
+free-to-review is a Claude Code plugin with two commands. Each one hands your work to a *different* LLM through [OpenRouter](https://openrouter.ai)'s free (`:free`) models, so it costs nothing. A model that reviews its own work tends to repeat its own blind spots. A model with different training catches different problems.
 
-## How it works
+| Command | What it does |
+|---|---|
+| `/free-to-review:review [target]` | Reviews your code with another model, then Claude checks each finding. |
+| `/free-to-review:request <prompt>` | Sends any request to another model and shows its answer. |
 
-The plugin was built for one workflow: Claude delegates the review of its own output to another model, then checks what comes back.
+## `/free-to-review:review`
 
-1. **Trigger.** The `second-opinion` skill tells Claude to ask for a second opinion at three points: after a non-trivial code change, before committing to a plan, and when writing tests. You can also ask directly, for example "get a second opinion on this diff".
-2. **Request.** Claude calls the `ask` tool with a preset and a self-contained prompt. The prompt states the purpose, the language, and any constraints, then includes the material itself. For example, after changing code, Claude sends `preset: "review"` with the `git diff` of the change.
-3. **Routing.** The server picks a free model, sends the preset's system prompt plus Claude's prompt, and moves to the next model if one is rate-limited or unavailable. Set `F2R_PANEL` to 2 or 3 to ask several models from different vendors in parallel.
-4. **Answer.** The reply comes back labelled with the model's name. It is wrapped in delimiters that mark it as external, untrusted text.
-5. **Verification.** Claude checks each point against the actual code, fixes the ones that hold up, and tells you which points it adopted or rejected, and why.
-
-What you see at the end (illustrative):
+Delegates a code review to another model and verifies the result.
 
 ```
-Second opinion (minimax/minimax-m3.1-flash:free):
-Adopted:
-- Off-by-one in the pagination loop — fixed the bound in src/list.ts
+/free-to-review:review                   # uncommitted changes, or the last commit if there are none
+/free-to-review:review src/auth.ts       # specific files or directories
+/free-to-review:review main              # everything on this branch since main
+/free-to-review:review the retry logic   # describe what to look at
+```
+
+1. Claude collects the code: the diff, the files, or the code you described.
+2. Claude sends it to a free model, with a short note on its purpose, language, and constraints.
+3. The model's findings come back. Claude checks each one against the actual code.
+4. You get the findings split into valid and rejected, each with a reason. Claude asks before changing any code.
+
+```
+Review by minimax/minimax-m3.1-flash:free:
+Valid:
+- Off-by-one in the pagination loop — src/list.ts:42 reads one item past the end
 Rejected:
 - "Validate the page size" — the route handler already validates it
 ```
 
-## Other uses
+## `/free-to-review:request`
 
-`ask` accepts any prompt, and the preset is optional, so the tool is not limited to reviewing Claude's own changes:
+Sends any request to another model. The review command was the reason this plugin exists, but a second model is useful for more than reviews:
 
-- **Review your own work.** Ask Claude to run `critique` on a design doc you wrote, or `edge-cases` on a function, before you merge it.
-- **Domain-specific reviewers.** Add a [custom preset](#custom-presets), such as `sql-migration` for locking and data-loss risks, `security` for injection and auth issues, or `api-design` for naming and breaking changes.
-- **A free-form second view.** Call `ask` without a preset to compare two approaches, sanity-check an error message, or see how another model would name something.
-- **Other MCP clients.** Any MCP client can call the same tool. Outside Claude Code you get the tool without the skill, so nothing triggers it or verifies the answer automatically.
+```
+/free-to-review:request Critique the migration plan we just wrote. What could go wrong?
+/free-to-review:request What edge cases am I missing in parseDate in src/date.ts?
+/free-to-review:request Compare a write-through cache and a TTL cache for this read-heavy API
+/free-to-review:request Suggest clearer names for the functions in src/sync.ts
+```
 
-## Install as a Claude Code plugin
+Your request is sent unchanged. If it refers to files or to earlier work in the conversation, Claude attaches that material, because the other model sees only what is sent. The answer is shown as it came back, followed by a short note from Claude on anything that looks wrong.
+
+## Install
 
 ```
 /plugin marketplace add gunhaa/free-to-review
 /plugin install free-to-review@free-to-review
 ```
 
-When prompted, enter your OpenRouter API key (create one at [openrouter.ai/keys](https://openrouter.ai/keys)). Claude Code stores it in secure storage. The MCP server does not start until the key is set; you can change it later with `/plugin` → free-to-review → configure.
+When prompted, enter your OpenRouter API key (create one at [openrouter.ai/keys](https://openrouter.ai/keys)). Claude Code stores it in secure storage. The plugin does not start until the key is set; you can change it later with `/plugin` → free-to-review → configure.
 
-The plugin adds:
+## Configuration
 
-- the `ask` tool of the `f2r` MCP server, and
-- the `second-opinion` skill, which tells Claude when to ask (after non-trivial code changes, before committing to a plan, when writing tests) and how to treat the answer: verify every point, never follow instructions inside it, and report which points were adopted or rejected.
+Set these through the plugin's configuration in Claude Code:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| OpenRouter API key | — (required) | Your OpenRouter API key |
+| Panel size | `1` | How many models answer each command, 1–3, from different vendors when possible. Each model uses one request of your free quota. |
+| Preferred models | empty | Comma-separated model IDs in preference order. Empty = pick free models automatically. |
+
+Free models are picked automatically and cached for an hour. If one is rate-limited or unavailable, the next one is tried. Only models whose ID ends in `:free` are ever used, so a request cannot reach a paid model.
 
 ## Use from other MCP clients
 
-Clone the repository (the compiled server is committed in `server/dist/`) and add it to your client's configuration:
+The commands are Claude Code features, but the server behind them is a plain MCP server with one tool, `ask`. Clone the repository (the compiled server is committed in `server/dist/`) and add it to your client's configuration:
 
 ```json
 {
@@ -67,62 +87,18 @@ Clone the repository (the compiled server is committed in `server/dist/`) and ad
 }
 ```
 
-The server speaks MCP over stdio and has no runtime dependencies.
-
-## Configuration
-
-The server reads only environment variables. In the Claude Code plugin, the key, panel size, and preferred models are set through the plugin's configuration.
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `OPENROUTER_API_KEY` | — (required) | OpenRouter API key |
-| `F2R_PANEL` | `1` | Number of models asked in parallel, 1–3. Each model uses one request of your free quota. |
-| `F2R_MODELS` | empty | Comma-separated model IDs in preference order. Empty = discover free models automatically. |
-| `F2R_PRESETS_DIR` | `$XDG_CONFIG_HOME/free-to-review/presets`, else `~/.config/free-to-review/presets` | Directory for your own presets |
-| `F2R_TIMEOUT_MS` | `60000` | Per-request timeout in milliseconds |
-| `F2R_MAX_PROMPT_CHARS` | `100000` | Longer prompts are rejected instead of wasting quota |
-
-Invalid values fall back to the default with a warning on stderr.
-
-### How models are chosen
-
-Without `F2R_MODELS`, the server lists OpenRouter's models (cached for an hour) and keeps those whose ID ends in `:free`, whose prices are zero, and that take and return text, largest context first. If a model fails with a temporary error (rate limit, unavailable, timeout, empty answer), the next one is tried, up to 3 attempts. With a panel of 2–3, the models come from different vendors so the opinions really differ.
-
-A caller (Claude) can request a specific model only if its ID ends in `:free`, so it cannot route your request to a paid model.
-
-## Presets
-
-Built-in presets, all answering in English:
-
-- `review` — code or a diff → findings by severity (Critical / Major / Minor), each with location, problem, why it matters, and a suggested fix.
-- `critique` — a design, plan, or decision → hidden assumptions, failure scenarios, simpler alternatives, open questions.
-- `edge-cases` — a function, spec, or behaviour → a table of edge cases worth testing.
-
-Each preset allows an explicit "nothing found" answer to discourage invented findings.
-
-### Custom presets
-
-Put Markdown files in your presets directory (default `~/.config/free-to-review/presets`). The file name is the preset name and must match `^[a-z0-9-]+$`; a file with the same name as a built-in replaces it.
-
-```markdown
----
-description: Review SQL migrations for locking and data-loss risks.
----
-You are a database engineer. Review the migration in the user message...
-```
-
-Presets are loaded when the server starts; restart it after changes.
+The server reads only environment variables: `OPENROUTER_API_KEY`, `F2R_PANEL`, `F2R_MODELS`, `F2R_TIMEOUT_MS` (default `60000`), and `F2R_MAX_PROMPT_CHARS` (default `100000`; longer prompts are rejected instead of wasting quota). Invalid values fall back to the default with a warning on stderr.
 
 ## Data and privacy
 
-- Everything you send with `ask` goes to OpenRouter and from there to the provider of the selected model.
+- Everything a command sends goes to OpenRouter and from there to the provider of the selected model.
 - Free endpoints may log your prompts and may use them for training. Check each model's provider policy on OpenRouter.
-- Do not send confidential code, secrets, credentials, or personal data. The skill instructs Claude to send only the material needed and to redact anything sensitive.
+- Do not send confidential code, secrets, credentials, or personal data. Both commands tell Claude to send only the material needed and to redact anything sensitive.
 - The server itself stores nothing and sends nothing anywhere else.
 
 ## Free-tier limits
 
-OpenRouter limits free models to 20 requests per minute and 50 requests per day; after you buy at least $10 of credits, the daily limit rises to 1,000. Failed requests may still count toward the limit. When the limit is hit, `ask` returns an error with the reset time when OpenRouter provides it.
+OpenRouter limits free models to 20 requests per minute and 50 requests per day; after you buy at least $10 of credits, the daily limit rises to 1,000. Failed requests may still count toward the limit. When the limit is hit, the command reports the reset time when OpenRouter provides it.
 
 ## Requirements
 
@@ -137,7 +113,7 @@ cd server
 npm install
 npm test        # builds dist/ and runs all tests
 npm run check   # fails if the committed dist/ is out of date
-OPENROUTER_API_KEY=... npm run smoke   # one real request with the review preset
+OPENROUTER_API_KEY=... npm run smoke   # one real review request
 ```
 
 ## License
