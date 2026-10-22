@@ -3,12 +3,12 @@
   "owner": {
     "name": "gunhaa"
   },
-  "description": "Personal marketplace for free-to-review: second opinions from free LLMs via OpenRouter.",
+  "description": "Personal marketplace for free-to-review: code reviews and requests answered by free LLMs via OpenRouter.",
   "plugins": [
     {
       "name": "free-to-review",
       "source": "./",
-      "description": "Second opinions on your code and plans from free LLMs via OpenRouter."
+      "description": "Code reviews and requests answered by free LLMs via OpenRouter, from two slash commands."
     }
   ]
 }

@@ -2,7 +2,7 @@
   "name": "free-to-review",
   "displayName": "Free to Review",
   "version": "0.1.0",
-  "description": "Second opinions on your code and plans from free LLMs via OpenRouter.",
+  "description": "Code reviews and requests answered by free LLMs via OpenRouter, from two slash commands.",
   "author": {
     "name": "gunhaa",
     "url": "https://github.com/gunhaa"
@@ -10,7 +10,7 @@
   "homepage": "https://github.com/gunhaa/free-to-review",
   "repository": "https://github.com/gunhaa/free-to-review",
   "license": "MIT",
-  "keywords": ["code-review", "second-opinion", "openrouter", "free", "mcp"],
+  "keywords": ["code-review", "openrouter", "free", "mcp"],
   "userConfig": {
     "openrouter_api_key": {
       "type": "string",
