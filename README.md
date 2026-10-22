@@ -57,6 +57,17 @@ Your request is sent unchanged. If it refers to files or to earlier work in the 
 
 When prompted, enter your OpenRouter API key (create one at [openrouter.ai/keys](https://openrouter.ai/keys)). Claude Code stores it in secure storage. The plugin does not start until the key is set; you can change it later with `/plugin` → free-to-review → configure.
 
+### Update
+
+Updates are not installed automatically. To get a new version, refresh the marketplace, update the plugin, and restart Claude Code:
+
+```
+claude plugin marketplace update free-to-review
+claude plugin update free-to-review@free-to-review
+```
+
+Your API key and settings are kept. If you installed the plugin from another marketplace, put that marketplace's name in place of the marketplace name `free-to-review`: in the first command, and after the `@` in the second.
+
 ## Configuration
 
 Set these through the plugin's configuration in Claude Code:

@@ -57,6 +57,17 @@ Rejected:
 
 안내가 나오면 OpenRouter API 키를 입력하세요([openrouter.ai/keys](https://openrouter.ai/keys)에서 발급). Claude Code가 키를 보안 저장소에 보관합니다. 키를 설정하기 전에는 플러그인이 시작되지 않으며, 나중에 `/plugin` → free-to-review → configure에서 바꿀 수 있습니다.
 
+### 업데이트
+
+업데이트는 자동으로 설치되지 않습니다. 새 버전을 받으려면 마켓플레이스를 새로 고치고, 플러그인을 업데이트한 뒤, Claude Code를 다시 시작하세요.
+
+```
+claude plugin marketplace update free-to-review
+claude plugin update free-to-review@free-to-review
+```
+
+API 키와 설정은 그대로 유지됩니다. 다른 마켓플레이스에서 설치했다면 마켓플레이스 이름 `free-to-review` 자리에 그 마켓플레이스 이름을 쓰세요. 첫 번째 명령의 이름과 두 번째 명령의 `@` 뒤 이름입니다.
+
 ## 설정
 
 Claude Code의 플러그인 설정에서 지정합니다.
