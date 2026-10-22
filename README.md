@@ -65,7 +65,7 @@ Set these through the plugin's configuration in Claude Code:
 |---|---|---|
 | OpenRouter API key | — (required) | Your OpenRouter API key |
 | Panel size | `1` | How many models answer each command, 1–3, from different vendors when possible. Each model uses one request of your free quota. |
-| Preferred models | empty | Comma-separated model IDs in preference order. Empty = pick free models automatically. |
+| Preferred models | empty | Comma-separated model IDs in preference order. Only IDs ending in `:free` are used; others are ignored with a warning. Empty = pick free models automatically. |
 
 Free models are picked automatically and cached for an hour. If one is rate-limited or unavailable, the next one is tried. Only models whose ID ends in `:free` are ever used, so a request cannot reach a paid model.
 

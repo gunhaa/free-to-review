@@ -30,7 +30,7 @@
     "models": {
       "type": "string",
       "title": "Preferred models",
-      "description": "Optional comma-separated OpenRouter model IDs. Leave empty to pick free models automatically.",
+      "description": "Optional comma-separated OpenRouter model IDs ending in :free (others are ignored). Leave empty to pick free models automatically.",
       "default": ""
     }
   }

@@ -43,3 +43,12 @@ test("non-integer values fall back with a warning", () => {
   assert.equal(c.maxPromptChars, 100000);
   assert.equal(warns.length, 2);
 });
+
+test("F2R_MODELS keeps only :free models and warns about the rest", () => {
+  const warns: string[] = [];
+  const c = loadConfig({ F2R_MODELS: "a/x:free, b/paid, c/y:free, d/z:free-ish" }, m => warns.push(m));
+  assert.deepEqual(c.models, ["a/x:free", "c/y:free"]);
+  assert.equal(warns.length, 1);
+  assert.match(warns[0], /F2R_MODELS/);
+  assert.match(warns[0], /b\/paid, d\/z:free-ish/);
+});

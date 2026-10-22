@@ -15,11 +15,19 @@ function integer(env, name, fallback, min, max, warn) {
     }
     return n;
 }
+// Only free models may be called, so a paid ID in F2R_MODELS is dropped rather than used.
+function freeModels(env, warn) {
+    const ids = (env.F2R_MODELS ?? "").split(",").map(s => s.trim()).filter(s => s.length > 0);
+    const paid = ids.filter(id => !id.endsWith(":free"));
+    if (paid.length > 0)
+        warn(`F2R_MODELS: ignoring models that do not end in ":free": ${paid.join(", ")}`);
+    return ids.filter(id => id.endsWith(":free"));
+}
 export function loadConfig(env, warn) {
     return {
         apiKey: value(env, "OPENROUTER_API_KEY"),
         panel: integer(env, "F2R_PANEL", 1, 1, 3, warn),
-        models: (env.F2R_MODELS ?? "").split(",").map(s => s.trim()).filter(s => s.length > 0),
+        models: freeModels(env, warn),
         timeoutMs: integer(env, "F2R_TIMEOUT_MS", 120000, 1000, Infinity, warn),
         maxPromptChars: integer(env, "F2R_MAX_PROMPT_CHARS", 100000, 1, Infinity, warn),
     };
