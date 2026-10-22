@@ -7,10 +7,6 @@ const DESCRIPTION = "Ask a different, free LLM (via OpenRouter) for a second opi
 const NO_KEY = "OPENROUTER_API_KEY is not set. In Claude Code, run /plugin, open free-to-review, and configure the OpenRouter API key. " +
     "In other MCP clients, set OPENROUTER_API_KEY in the server's env. Get a key at https://openrouter.ai/keys.";
 const error = (text) => ({ text, isError: true });
-export function composeSystem(preset, system) {
-    const parts = [preset?.body, system].filter((p) => p !== undefined && p.length > 0);
-    return parts.length > 0 ? parts.join("\n\n") : undefined;
-}
 export function toolDefinition(presets) {
     const names = [...presets.keys()];
     const list = [...presets.values()].map(p => `${p.name} — ${p.description}`).join("; ");
@@ -22,7 +18,6 @@ export function toolDefinition(presets) {
             properties: {
                 prompt: { type: "string", description: "The material to examine (a diff, plan, spec, function…) with enough context: purpose, language, constraints." },
                 preset: { type: "string", enum: names, description: "System-prompt preset to use." },
-                system: { type: "string", description: "Extra instructions, appended after the preset." },
                 model: { type: "string", description: "A specific OpenRouter model ID ending in ':free'. Usually omit it." },
             },
             required: ["prompt"],
@@ -37,6 +32,12 @@ function section(answer, presetName) {
     const text = answer.text.replace(DELIMITER, "[delimiter removed]");
     return `Second opinion from \`${answer.model}\` ${label}\n\n<<<EXTERNAL_MODEL_OUTPUT\n${text}\nEXTERNAL_MODEL_OUTPUT>>>`;
 }
+const MAX_UPSTREAM_CHARS = 200;
+// Error text from OpenRouter or a provider sits outside the delimiters, so keep it to one short line.
+function upstream(message) {
+    const flat = message.replace(DELIMITER, "[delimiter removed]").replace(/\s+/g, " ").trim();
+    return flat.length > MAX_UPSTREAM_CHARS ? `${flat.slice(0, MAX_UPSTREAM_CHARS - 1)}…` : flat;
+}
 function failureMessage(outcomes) {
     const last = outcomes.map(o => o.failures[o.failures.length - 1]).filter((f) => f !== undefined);
     if (last.some(f => f.status === 401))
@@ -46,12 +47,15 @@ function failureMessage(outcomes) {
     }
     if (last.length > 0 && last.every(f => f.status === 429)) {
         // The free-tier limit is per account, so any attempt's reset time applies; report the latest.
-        const resets = outcomes.flatMap(o => o.failures).map(f => f.resetAt).filter((r) => r !== undefined);
+        const resets = outcomes
+            .flatMap(o => o.failures)
+            .map(f => f.resetAt)
+            .filter((r) => r !== undefined && Number.isFinite(new Date(r).getTime()));
         const when = resets.length > 0 ? ` The limit resets at ${new Date(Math.max(...resets)).toISOString()}.` : "";
         return (`The OpenRouter free-tier rate limit was hit (per-minute or daily).${when} ` +
             "Buying $10 of OpenRouter credits raises the free daily limit from 50 to 1,000 requests.");
     }
-    const attempts = outcomes.flatMap(o => o.failures).map(f => `- ${f.model}: ${f.message}`);
+    const attempts = outcomes.flatMap(o => o.failures).map(f => `- ${f.model}: ${upstream(f.message)}`);
     return `All attempts failed:\n${attempts.join("\n")}`;
 }
 // Skips models that recently answered 403 (e.g. free models gated to listed apps),
@@ -70,13 +74,12 @@ export async function ask(args, deps) {
         return error(NO_KEY);
     if (typeof args.prompt !== "string" || args.prompt.trim().length === 0)
         return error("prompt is required: pass the material to examine as a non-empty string.");
-    for (const field of ["preset", "system", "model"]) {
+    for (const field of ["preset", "model"]) {
         if (args[field] !== undefined && typeof args[field] !== "string")
             return error(`${field} must be a string.`);
     }
     const prompt = args.prompt;
     const presetName = args.preset;
-    const system = args.system;
     const model = args.model;
     if (prompt.length > config.maxPromptChars) {
         return error(`Prompt is too long (${prompt.length} characters; the limit is ${config.maxPromptChars}). ` +
@@ -114,7 +117,7 @@ export async function ask(args, deps) {
     const attempts = model !== undefined ? 1 : MAX_ATTEMPTS;
     const tried = new Set(initial);
     const slotVendors = initial.map(vendorOf);
-    const callOptions = { system: composeSystem(preset, system), prompt };
+    const callOptions = { system: preset?.body, prompt };
     // Claiming the next candidate is synchronous, so parallel slots never take the same one.
     const nextCandidate = (slot) => {
         const others = new Set(slotVendors.filter((_, i) => i !== slot));
@@ -154,7 +157,7 @@ export async function ask(args, deps) {
     if (panelMode) {
         const failed = outcomes.filter(o => !o.answer).flatMap(o => o.failures);
         if (failed.length > 0)
-            parts.push(`Failed: ${failed.map(f => `${f.model} (${f.message})`).join("; ")}`);
+            parts.push(`Failed: ${failed.map(f => `${f.model} (${upstream(f.message)})`).join("; ")}`);
     }
     return { text: parts.join("\n\n"), isError: false };
 }
