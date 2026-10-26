@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "f2r": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/dist/index.js"],
+      "env": {
+        "NVIDIA_API_KEY": "${user_config.nvidia_api_key}",
+        "OPENROUTER_API_KEY": "${user_config.openrouter_api_key}",
+        "F2R_DATA_DIR": "${CLAUDE_PLUGIN_DATA}"
+      }
+    }
+  }
+}

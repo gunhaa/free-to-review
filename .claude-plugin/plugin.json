@@ -1,0 +1,30 @@
+{
+  "name": "free-to-review",
+  "displayName": "Free to Review",
+  "version": "0.1.0",
+  "description": "Code reviews and requests answered by free LLMs (NVIDIA build or OpenRouter), from slash commands.",
+  "author": {
+    "name": "gunhaa",
+    "url": "https://github.com/gunhaa"
+  },
+  "homepage": "https://github.com/gunhaa/free-to-review",
+  "repository": "https://github.com/gunhaa/free-to-review",
+  "license": "MIT",
+  "keywords": ["code-review", "nvidia", "openrouter", "free", "mcp"],
+  "userConfig": {
+    "nvidia_api_key": {
+      "type": "string",
+      "title": "NVIDIA API key",
+      "description": "Key from build.nvidia.com. Set this, the OpenRouter key, or both; choose which one to use first with /free-to-review:provider.",
+      "sensitive": true,
+      "required": false
+    },
+    "openrouter_api_key": {
+      "type": "string",
+      "title": "OpenRouter API key",
+      "description": "Key from openrouter.ai/keys. Set this, the NVIDIA key, or both; choose which one to use first with /free-to-review:provider.",
+      "sensitive": true,
+      "required": false
+    }
+  }
+}

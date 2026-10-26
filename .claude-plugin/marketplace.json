@@ -1,0 +1,14 @@
+{
+  "name": "free-to-review",
+  "owner": {
+    "name": "gunhaa"
+  },
+  "description": "Personal marketplace for free-to-review: code reviews and requests answered by free LLMs on NVIDIA build or OpenRouter.",
+  "plugins": [
+    {
+      "name": "free-to-review",
+      "source": "./",
+      "description": "Code reviews and requests answered by free LLMs on NVIDIA build or OpenRouter (needs either API key; NVIDIA recommended), from slash commands."
+    }
+  ]
+}
